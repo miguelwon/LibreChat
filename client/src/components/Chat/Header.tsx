@@ -10,6 +10,7 @@ import { useMediaQuery, useHasAccess } from '~/hooks';
 import BookmarkMenu from './Menus/BookmarkMenu';
 import { TemporaryChat } from './TemporaryChat';
 import AddMultiConvo from './AddMultiConvo';
+import SearchButton from './Menus/SearchButton';
 
 const defaultInterface = getConfigDefaults().interface;
 
@@ -58,6 +59,7 @@ export default function Header() {
             {interfaceConfig.presets === true && interfaceConfig.modelSelect && <PresetsMenu />}
             {hasAccessToBookmarks === true && <BookmarkMenu />}
             {hasAccessToMultiConvo === true && <AddMultiConvo />}
+            <SearchButton />
             {isSmallScreen && (
               <>
                 <ExportAndShareMenu
