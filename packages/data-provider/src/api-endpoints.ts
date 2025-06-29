@@ -97,6 +97,8 @@ export const search = (q: string, cursor?: string | null) =>
 
 export const searchEnabled = () => '/api/search/enable';
 
+export const classificalSearch = () => '/api/classifical-search';
+
 export const presets = () => '/api/presets';
 
 export const deletePreset = () => '/api/presets/delete';

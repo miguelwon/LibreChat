@@ -78,6 +78,10 @@ export function deletePreset(arg: s.TPreset | undefined): Promise<m.PresetDelete
   return request.post(endpoints.deletePreset(), arg);
 }
 
+export function classificalSearch(payload: { query: string; page: number }): Promise<any> {
+  return request.post(endpoints.classificalSearch(), payload);
+}
+
 export function getSearchEnabled(): Promise<boolean> {
   return request.get(endpoints.searchEnabled());
 }
