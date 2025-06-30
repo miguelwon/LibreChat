@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Input } from '~/components/ui';
+import { Input, Button, Checkbox, Slider,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui';
 import { useLocalize } from '~/hooks';
 import { dataService } from 'librechat-data-provider';
 
@@ -15,6 +21,8 @@ interface SearchResult {
   n_processo: string;
   data_acordao: string;
   relator: string[];
+  sumario: string | null;
+  sumario_ia: string | null;
 }
 
 export default function Search() {
@@ -23,9 +31,36 @@ export default function Search() {
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const localize = useLocalize();
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedTribunais, setSelectedTribunais] = useState<string[]>([]);
+  const [relatorInput, setRelatorInput] = useState('');
+  const [selectedRelatores, setSelectedRelatores] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState([2000, 2024]);
+  const [allRelatores, setAllRelatores] = useState<string[]>([]);
+  const [relatorSuggestions, setRelatorSuggestions] = useState<string[]>([]);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch('/relatores.txt')
+      .then((response) => response.text())
+      .then((text) => {
+        const relatoresList = text.split('\n').filter((r) => r.trim() !== '');
+        setAllRelatores(relatoresList);
+      });
+  }, []);
+
+  const TRIBUNAIS = ['JP', 'STA', 'STJ', 'TCAN', 'TCAS', 'TRC', 'TRE', 'TRG', 'TRL', 'TRP'];
 
   const searchMutation = useMutation(
-    (params: { query: string; page: number }) => dataService.classificalSearch(params),
+    (
+      params: {
+        query: string;
+        page: number;
+        selectedTribunais: string[];
+        selectedRelatores: string[];
+        dateRange: number[];
+      },
+    ) => dataService.classificalSearch(params),
     {
       onSuccess: (data) => {
         setResults(data.results);
@@ -43,7 +78,13 @@ export default function Search() {
     }
     setCurrentPage(page);
     setSearchedQuery(searchQuery);
-    searchMutation.mutate({ query: searchQuery, page });
+    searchMutation.mutate({
+      query: searchQuery,
+      page,
+      selectedTribunais,
+      selectedRelatores,
+      dateRange,
+    });
   };
 
   const handlePageChange = (newPage: number) => {
@@ -51,7 +92,13 @@ export default function Search() {
       return;
     }
     setCurrentPage(newPage);
-    searchMutation.mutate({ query: searchedQuery, page: newPage });
+    searchMutation.mutate({
+      query: searchedQuery,
+      page: newPage,
+      selectedTribunais,
+      selectedRelatores,
+      dateRange,
+    });
     window.scrollTo(0, 0);
   };
   
@@ -61,17 +108,67 @@ export default function Search() {
     }
   };
 
+  const toggleTribunal = (tribunal: string) => {
+    setSelectedTribunais((prev) =>
+      prev.includes(tribunal) ? prev.filter((t) => t !== tribunal) : [...prev, tribunal],
+    );
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setRelatorSuggestions([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleRelatorInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setRelatorInput(value);
+    if (value.length > 1) {
+      const suggestions = allRelatores.filter((r) =>
+        r.toLowerCase().includes(value.toLowerCase()),
+      );
+      setRelatorSuggestions(suggestions);
+    } else {
+      setRelatorSuggestions([]);
+    }
+  };
+
+  const addRelator = (relator?: string) => {
+    const relatorToAdd = relator || relatorInput;
+    if (relatorToAdd && !selectedRelatores.includes(relatorToAdd)) {
+      setSelectedRelatores([...selectedRelatores, relatorToAdd]);
+      setRelatorInput('');
+      setRelatorSuggestions([]);
+    }
+  };
+
+  const addSuggestedRelator = (suggestion: string) => {
+    addRelator(suggestion);
+  };
+
+  const removeRelator = (relator: string) => {
+    setSelectedRelatores(selectedRelatores.filter((r) => r !== relator));
+  };
+
   return (
     <div
-      className={`flex min-h-screen w-full flex-col items-center ${
-        results ? 'justify-start pt-10' : 'justify-center'
+      className={`flex min-h-screen w-full flex-col items-center justify-start transition-[padding-top] duration-300 ${
+        !results && relatorSuggestions.length === 0 ? 'pt-48' : 'pt-10'
       }`}
     >
       <div className="w-full max-w-5xl px-4">
         <h1 className="mb-4 text-center text-2xl font-bold">
           {localize('com_ui_classifical_search')}
         </h1>
-        <div className={`flex items-center space-x-2 ${results ? 'mb-8' : ''}`}>
+        <div className={`w-full ${results ? 'mb-8' : ''}`}>
+          <div className="flex items-center space-x-2">
           <Input
             type="text"
             value={searchQuery}
@@ -80,33 +177,174 @@ export default function Search() {
             placeholder={localize('com_ui_search_placeholder')}
             className="flex-grow"
           />
-          <button
+            <Button
             onClick={() => handleSearch()}
-            className="rounded-lg bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
+              variant="submit"
             disabled={searchMutation.isLoading}
           >
             {searchMutation.isLoading ? 'Searching...' : localize('com_ui_search')}
+            </Button>
+          </div>
+
+          <div className="mt-4 flex justify-start">
+            <Button variant="outline" size="sm" onClick={() => setShowAdvanced(!showAdvanced)}>
+              Pesquisa Avançada
+            </Button>
+          </div>
+
+          {showAdvanced && (
+            <div className="mt-4 rounded-lg border p-4 dark:border-gray-600">
+              <div className="mb-4">
+                <label className="mb-2 block font-bold">Tribunal</label>
+                <div className="flex flex-wrap gap-2">
+                  {TRIBUNAIS.map((tribunal) => (
+                    <Button
+                      key={tribunal}
+                      variant={selectedTribunais.includes(tribunal) ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => toggleTribunal(tribunal)}
+                    >
+                      {tribunal}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="relator-input" className="mb-2 block font-bold">
+                  Relator
+                </label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="relator-input"
+                    type="text"
+                    value={relatorInput}
+                    onChange={handleRelatorInputChange}
+                    placeholder="Digite o nome do relator"
+                    className="flex-grow"
+                    autoComplete="off"
+                  />
+                  <Button onClick={() => addRelator()}>Adicionar</Button>
+                </div>
+                {relatorSuggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="mt-2 max-h-60 overflow-y-auto rounded-md border bg-background dark:border-gray-600"
+                  >
+                    {relatorSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        onClick={() => addSuggestedRelator(suggestion)}
+                        className="p-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedRelatores.map((relator) => (
+                    <div
+                      key={relator}
+                      className="flex items-center rounded-full bg-gray-200 px-3 py-1 text-sm dark:bg-gray-700"
+                    >
+                      {relator}
+                      <button
+                        onClick={() => removeRelator(relator)}
+                        className="ml-2 font-bold text-red-500"
+                      >
+                        x
           </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block font-bold">Data do Acórdão</label>
+                <div className="flex items-center justify-between text-sm">
+                  <span>{dateRange[0]}</span>
+                  <span>{dateRange[1]}</span>
+                </div>
+                <Slider
+                  value={dateRange}
+                  onValueChange={setDateRange}
+                  min={2000}
+                  max={2024}
+                  step={1}
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {searchMutation.isLoading && <p className="text-center">Loading...</p>}
         {results && results.length > 0 && (
           <div className="flex flex-col">
             {results.map((result) => (
-              <div key={result.mg_id} className="mb-6">
-                <a
-                  href={result.url.startsWith('http') ? result.url : `http://${result.url}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-lg font-bold text-blue-700 hover:underline"
-                >
-                  {result.n_processo}
-                </a>
-                <p className="text-sm text-gray-600 mt-1">{new Date(result.data_acordao).toLocaleDateString()}</p>
-                <p className="mt-1 text-sm text-gray-800">{result.chunk}</p>
-                <p className="mt-1 text-sm text-gray-600">
-                  <strong>Relatores:</strong> {result.relator.join(', ')}
+              <div
+                key={result.mg_id}
+                className="mb-6 rounded-lg border bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
+              >
+                <div className="flex items-start justify-between">
+                  <h3 className="pr-4 text-xl font-semibold">
+                    <a
+                      href={result.url.startsWith('http') ? result.url : `http://${result.url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-700 hover:underline dark:text-blue-400"
+                    >
+                      Acórdão do {result.tribunal} de{' '}
+                      {new Date(result.data_acordao).toLocaleDateString()}
+                    </a>
+                  </h3>
+                  <div className="flex flex-shrink-0 space-x-2">
+                    {result.sumario && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            Sumário
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <DialogHeader>
+                            <DialogTitle>Sumário</DialogTitle>
+                          </DialogHeader>
+                          <div className="mt-4 border-t pt-4 dark:border-gray-700">
+                            <div className="max-h-[70vh] overflow-y-auto pr-2 text-sm text-gray-800 dark:text-gray-300">
+                              <p className="leading-relaxed">{result.sumario}</p>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    {result.sumario_ia && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            Sumário IA
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-3xl">
+                          <DialogHeader>
+                            <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
+                          </DialogHeader>
+                          <div className="mt-4 border-t pt-4 dark:border-gray-700">
+                            <div className="mt-2 max-h-[70vh] overflow-y-auto pr-2 text-sm text-gray-800 dark:text-gray-300">
+                              <p className="leading-relaxed">{result.sumario_ia}</p>
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-4 text-sm text-gray-800 dark:text-gray-300">
+                  Processo: <span className="font-bold">{result.n_processo}</span> | Relator:{' '}
+                  <span className="font-bold">{result.relator.join(', ')}</span>
                 </p>
+                <p className="mt-4 text-sm text-gray-800 dark:text-gray-300">{result.chunk}</p>
               </div>
             ))}
           </div>

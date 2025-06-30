@@ -78,8 +78,23 @@ export function deletePreset(arg: s.TPreset | undefined): Promise<m.PresetDelete
   return request.post(endpoints.deletePreset(), arg);
 }
 
-export function classificalSearch(payload: { query: string; page: number }): Promise<any> {
-  return request.post(endpoints.classificalSearch(), payload);
+export function classificalSearch(payload: {
+  query: string;
+  page: number;
+  selectedTribunais: string[];
+  selectedRelatores: string[];
+  dateRange: number[];
+}): Promise<any> {
+  const { query, page, selectedTribunais, selectedRelatores, dateRange } = payload;
+  const requestPayload = {
+    query: query,
+    page: page,
+    tribunal: selectedTribunais,
+    relator: selectedRelatores,
+    date_min: dateRange[0].toString(),
+    date_max: dateRange[1].toString(),
+  };
+  return request.post(endpoints.classificalSearch(), requestPayload);
 }
 
 export function getSearchEnabled(): Promise<boolean> {
