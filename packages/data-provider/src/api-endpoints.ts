@@ -99,6 +99,8 @@ export const searchEnabled = () => '/api/search/enable';
 
 export const classificalSearch = () => '/api/classifical-search';
 
+export const getSearchResult = (id: string) => `/api/search/result/${id}`;
+
 export const presets = () => '/api/presets';
 
 export const deletePreset = () => '/api/presets/delete';

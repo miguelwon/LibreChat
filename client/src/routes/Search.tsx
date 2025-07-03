@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input, Button, Checkbox, Slider,
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import { Input, Button, Checkbox, Slider,
 import { useLocalize } from '~/hooks';
 import { dataService } from 'librechat-data-provider';
 import { Spinner } from '~/components/svg';
+import Markdown from '~/components/Chat/Messages/Content/Markdown';
+import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
 
 interface SumarioIA {
   sumario: string;
@@ -41,6 +43,40 @@ interface SummaryState {
   isOpen: boolean;
 }
 
+const usePollForResult = (
+  onSuccess: (data: { acordao_id: string; sumario_ia: SumarioIA | null }) => void,
+) => {
+  const poll = async (id: string) => {
+    try {
+      const data = await dataService.getSearchResult(id);
+      if (data && data.sumario_ia) {
+        onSuccess(data);
+        return true; // Stop polling
+      }
+      return false; // Continue polling
+    } catch (error) {
+      console.error('Polling failed:', error);
+      return true; // Stop polling on error
+    }
+  };
+
+  const startPolling = (id: string) => {
+    const intervalId = setInterval(async () => {
+      const shouldStop = await poll(id);
+      if (shouldStop) {
+        clearInterval(intervalId);
+      }
+    }, 5000); // Poll every 5 seconds
+
+    // Optional: Stop polling after a timeout
+    setTimeout(() => {
+      clearInterval(intervalId);
+    }, 120000); // Stop after 2 minutes
+  };
+
+  return { startPolling };
+};
+
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedQuery, setSearchedQuery] = useState('');
@@ -55,12 +91,8 @@ export default function Search() {
   const [allRelatores, setAllRelatores] = useState<string[]>([]);
   const [relatorSuggestions, setRelatorSuggestions] = useState<string[]>([]);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const [summaryState, setSummaryState] = useState<SummaryState>({
-    isLoading: false,
-    data: null,
-    error: null,
-    isOpen: false,
-  });
+  const [generatingSummaries, setGeneratingSummaries] = useState<string[]>([]);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     fetch('/relatores.txt')
@@ -74,15 +106,13 @@ export default function Search() {
   const TRIBUNAIS = ['JP', 'STA', 'STJ', 'TCAN', 'TCAS', 'TRC', 'TRE', 'TRG', 'TRL', 'TRP'];
 
   const searchMutation = useMutation(
-    (
-      params: {
-        query: string;
-        page: number;
-        selectedTribunais: string[];
-        selectedRelatores: string[];
-        dateRange: number[];
-      },
-    ) => dataService.classificalSearch(params),
+    (params: {
+      query: string;
+      page: number;
+      selectedTribunais: string[];
+      selectedRelatores: string[];
+      dateRange: number[];
+    }) => dataService.classificalSearch(params),
     {
       onSuccess: (data) => {
         setResults(data.results);
@@ -94,31 +124,39 @@ export default function Search() {
     },
   );
 
-  const summaryMutation = useMutation((id: string) => dataService.generateSummary(id), {
-    onMutate: () => {
-      setSummaryState({ isLoading: true, data: null, error: null, isOpen: true });
-    },
-    onSuccess: (data, id) => {
-      setSummaryState({ isLoading: false, data, error: null, isOpen: true });
-      setResults((prevResults) => {
-        if (!prevResults) {
-          return null;
+  const { startPolling } = usePollForResult((data) => {
+    setResults((prevResults) => {
+      if (!prevResults) {
+        return null;
+      }
+      return prevResults.map((result) => {
+        if (result.acordao_id === data.acordao_id) {
+          return { ...result, sumario_ia: data.sumario_ia };
         }
-        return prevResults.map((result) => {
-          if (result.acordao_id === id) {
-            return { ...result, sumario_ia: data };
-          }
-          return result;
-        });
+        return result;
       });
+    });
+    setGeneratingSummaries((prev) => prev.filter((id) => id !== data.acordao_id));
+    queryClient.invalidateQueries(['search', searchedQuery]);
+  });
+
+  const summaryMutation = useMutation((id: string) => dataService.generateSummary(id), {
+    onSuccess: (data, id) => {
+      if (data.success) {
+        startPolling(id);
+      } else {
+        console.error('Failed to initiate summary generation.');
+        setGeneratingSummaries((prev) => prev.filter((genId) => genId !== id));
+      }
     },
-    onError: (error: Error) => {
-      setSummaryState({ isLoading: false, data: null, error, isOpen: true });
+    onError: (error: Error, id) => {
       console.error('Summary generation failed:', error);
+      setGeneratingSummaries((prev) => prev.filter((genId) => genId !== id));
     },
   });
 
   const handleGenerateSummary = (id: string) => {
+    setGeneratingSummaries((prev) => [...prev, id]);
     summaryMutation.mutate(id);
   };
 
@@ -383,10 +421,14 @@ export default function Search() {
                             <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
                           </DialogHeader>
                           <div className="border-t dark:border-gray-700">
-                            <div className="max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
-                              <p className="whitespace-pre-wrap leading-relaxed text-justify">
-                                {result.sumario_ia.sumario}
-                              </p>
+                            <div className="markdown-container max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
+                              <ArtifactProvider>
+                                <CodeBlockProvider>
+                                  <div className="prose dark:prose-invert max-w-none">
+                                    <Markdown content={result.sumario_ia.sumario} />
+                                  </div>
+                                </CodeBlockProvider>
+                              </ArtifactProvider>
                               {result.sumario_ia.referencias &&
                                 result.sumario_ia.referencias.length > 0 && (
                                   <div className="mt-4">
@@ -410,8 +452,16 @@ export default function Search() {
                         variant="ghost"
                         size="sm"
                         onClick={() => handleGenerateSummary(result.acordao_id)}
+                        disabled={generatingSummaries.includes(result.acordao_id)}
                       >
-                        Gerar Sumário IA
+                        {generatingSummaries.includes(result.acordao_id) ? (
+                          <>
+                            <Spinner className="mr-1" />
+                            A Gerar...
+                          </>
+                        ) : (
+                          'Gerar Sumário IA'
+                        )}
                       </Button>
                     )}
                   </div>
@@ -449,45 +499,6 @@ export default function Search() {
           </div>
         )}
       </div>
-      <Dialog open={summaryState.isOpen} onOpenChange={(isOpen) => setSummaryState(prev => ({ ...prev, isOpen }))}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
-          </DialogHeader>
-          <div className="border-t dark:border-gray-700">
-            <div className="max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
-              {summaryState.isLoading && (
-                <div className="flex flex-col items-center justify-center gap-4">
-                  <Spinner />
-                  <p>A gerar sumário. Pode levar 1 minuto</p>
-                </div>
-              )}
-              {summaryState.error && (
-                <p className="text-red-500">Error: {summaryState.error.message}</p>
-              )}
-              {summaryState.data && (
-                <div>
-                  <p className="whitespace-pre-wrap leading-relaxed text-justify">
-                    {summaryState.data.sumario}
-                  </p>
-                  {summaryState.data.referencias && summaryState.data.referencias.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="font-bold">Referências mais relevantes:</h4>
-                      <ul className="mt-2 list-disc pl-5">
-                        {summaryState.data.referencias.map((ref, index) => (
-                          <li key={index} className="mb-1">
-                            {ref}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

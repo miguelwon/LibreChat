@@ -30,25 +30,18 @@ router.get('/:id', async (req, res) => {
       },
     });
 
-    const { sumario_ia: generatedSummary } = apiResponse.data;
-
-    if (!generatedSummary) {
-      logger.warn(`[generateSummary] No summary generated for id: ${id}`);
-      return res.status(404).json({ message: 'Could not generate summary' });
+    if (apiResponse.data && apiResponse.data.success === true) {
+      logger.debug(`[generateSummary] Successfully initiated summary for id: ${id}`);
+      res.json({ success: true });
+    } else {
+      logger.warn(
+        `[generateSummary] External API did not return success for id: ${id}`,
+        apiResponse.data,
+      );
+      res.status(500).json({ message: 'Failed to initiate summary generation via external API' });
     }
-
-    const newSumarioIa = {
-      sumario: generatedSummary,
-      referencias: [],
-      modelo: 'N/A',
-      temperatura: 0,
-      full_response: JSON.stringify(apiResponse.data),
-    };
-
-    logger.debug(`[generateSummary] Successfully generated summary for id: ${id}`);
-    res.json(newSumarioIa);
   } catch (error) {
-    logger.error(`[generateSummary] Error generating summary for id: ${id}`, error);
+    logger.error(`[generateSummary] Error calling external summary API for id: ${id}`, error);
     if (error.response) {
       logger.error('[generateSummary] External API response:', error.response.data);
       return res.status(error.response.status).json({
