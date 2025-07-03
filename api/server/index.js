@@ -100,6 +100,7 @@ const startServer = async () => {
   app.use('/api/user', routes.user);
   app.use('/api/search', routes.search);
   app.use('/api/classifical-search', routes.classificalSearch);
+  app.use('/api/summary', routes.generateSummary);
   app.use('/api/edit', routes.edit);
   app.use('/api/messages', routes.messages);
   app.use('/api/convos', routes.convos);
