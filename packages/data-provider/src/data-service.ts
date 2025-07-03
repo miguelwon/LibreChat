@@ -97,6 +97,10 @@ export function classificalSearch(payload: {
   return request.post(endpoints.classificalSearch(), requestPayload);
 }
 
+export function generateSummary(id: string): Promise<any> {
+  return request.get(endpoints.summary(id));
+}
+
 export function getSearchEnabled(): Promise<boolean> {
   return request.get(endpoints.searchEnabled());
 }
