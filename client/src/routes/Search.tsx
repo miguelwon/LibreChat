@@ -9,6 +9,7 @@ import { Input, Button, Checkbox, Slider,
 } from '~/components/ui';
 import { useLocalize } from '~/hooks';
 import { dataService } from 'librechat-data-provider';
+import { Spinner } from '~/components/svg';
 
 interface SumarioIA {
   sumario: string;
@@ -33,6 +34,13 @@ interface SearchResult {
   sumario_ia: SumarioIA | null;
 }
 
+interface SummaryState {
+  isLoading: boolean;
+  data: SumarioIA | null;
+  error: Error | null;
+  isOpen: boolean;
+}
+
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedQuery, setSearchedQuery] = useState('');
@@ -47,6 +55,12 @@ export default function Search() {
   const [allRelatores, setAllRelatores] = useState<string[]>([]);
   const [relatorSuggestions, setRelatorSuggestions] = useState<string[]>([]);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const [summaryState, setSummaryState] = useState<SummaryState>({
+    isLoading: false,
+    data: null,
+    error: null,
+    isOpen: false,
+  });
 
   useEffect(() => {
     fetch('/relatores.txt')
@@ -79,6 +93,34 @@ export default function Search() {
       },
     },
   );
+
+  const summaryMutation = useMutation((id: string) => dataService.generateSummary(id), {
+    onMutate: () => {
+      setSummaryState({ isLoading: true, data: null, error: null, isOpen: true });
+    },
+    onSuccess: (data, id) => {
+      setSummaryState({ isLoading: false, data, error: null, isOpen: true });
+      setResults((prevResults) => {
+        if (!prevResults) {
+          return null;
+        }
+        return prevResults.map((result) => {
+          if (result.acordao_id === id) {
+            return { ...result, sumario_ia: data };
+          }
+          return result;
+        });
+      });
+    },
+    onError: (error: Error) => {
+      setSummaryState({ isLoading: false, data: null, error, isOpen: true });
+      console.error('Summary generation failed:', error);
+    },
+  });
+
+  const handleGenerateSummary = (id: string) => {
+    summaryMutation.mutate(id);
+  };
 
   const handleSearch = (page = 1) => {
     if (!searchQuery.trim()) {
@@ -348,7 +390,7 @@ export default function Search() {
                               {result.sumario_ia.referencias &&
                                 result.sumario_ia.referencias.length > 0 && (
                                   <div className="mt-4">
-                                    <h4 className="font-bold">Referênciais mais relevantes:</h4>
+                                    <h4 className="font-bold">Referências mais relevantes:</h4>
                                     <ul className="mt-2 list-disc pl-5">
                                       {result.sumario_ia.referencias.map((ref, index) => (
                                         <li key={index} className="mb-1">
@@ -362,6 +404,15 @@ export default function Search() {
                           </div>
                         </DialogContent>
                       </Dialog>
+                    )}
+                    {!result.sumario_ia && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleGenerateSummary(result.acordao_id)}
+                      >
+                        Gerar Sumário IA
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -398,6 +449,45 @@ export default function Search() {
           </div>
         )}
       </div>
+      <Dialog open={summaryState.isOpen} onOpenChange={(isOpen) => setSummaryState(prev => ({ ...prev, isOpen }))}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
+          </DialogHeader>
+          <div className="border-t dark:border-gray-700">
+            <div className="max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
+              {summaryState.isLoading && (
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <Spinner />
+                  <p>A gerar sumário. Pode levar 1 minuto</p>
+                </div>
+              )}
+              {summaryState.error && (
+                <p className="text-red-500">Error: {summaryState.error.message}</p>
+              )}
+              {summaryState.data && (
+                <div>
+                  <p className="whitespace-pre-wrap leading-relaxed text-justify">
+                    {summaryState.data.sumario}
+                  </p>
+                  {summaryState.data.referencias && summaryState.data.referencias.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="font-bold">Referências mais relevantes:</h4>
+                      <ul className="mt-2 list-disc pl-5">
+                        {summaryState.data.referencias.map((ref, index) => (
+                          <li key={index} className="mb-1">
+                            {ref}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

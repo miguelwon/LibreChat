@@ -14,11 +14,11 @@ export default defineConfig(({ command }) => ({
     strictPort: false,
     proxy: {
       '/api': {
-        target: 'http://localhost:3080',
+        target: 'http://167.235.52.80:3080',
         changeOrigin: true,
       },
       '/oauth': {
-        target: 'http://localhost:3080',
+        target: 'http://167.235.52.80:3080',
         changeOrigin: true,
       },
     },
