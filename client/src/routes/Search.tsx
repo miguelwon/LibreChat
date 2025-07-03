@@ -10,6 +10,14 @@ import { Input, Button, Checkbox, Slider,
 import { useLocalize } from '~/hooks';
 import { dataService } from 'librechat-data-provider';
 
+interface SumarioIA {
+  sumario: string;
+  referencias: string[];
+  modelo: string;
+  temperatura: number;
+  full_response: string;
+}
+
 interface SearchResult {
   mg_id: string;
   acordao_id: string;
@@ -22,7 +30,7 @@ interface SearchResult {
   data_acordao: string;
   relator: string[];
   sumario: string | null;
-  sumario_ia: string | null;
+  sumario_ia: SumarioIA | null;
 }
 
 export default function Search() {
@@ -311,9 +319,11 @@ export default function Search() {
                           <DialogHeader>
                             <DialogTitle>Sumário</DialogTitle>
                           </DialogHeader>
-                          <div className="mt-4 border-t pt-4 dark:border-gray-700">
-                            <div className="max-h-[70vh] overflow-y-auto pr-2 text-sm text-gray-800 dark:text-gray-300">
-                              <p className="leading-relaxed">{result.sumario}</p>
+                          <div className="border-t dark:border-gray-700">
+                            <div className="max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
+                              <p className="whitespace-pre-wrap leading-relaxed text-justify">
+                                {result.sumario}
+                              </p>
                             </div>
                           </div>
                         </DialogContent>
@@ -330,9 +340,24 @@ export default function Search() {
                           <DialogHeader>
                             <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
                           </DialogHeader>
-                          <div className="mt-4 border-t pt-4 dark:border-gray-700">
-                            <div className="mt-2 max-h-[70vh] overflow-y-auto pr-2 text-sm text-gray-800 dark:text-gray-300">
-                              <p className="leading-relaxed">{result.sumario_ia}</p>
+                          <div className="border-t dark:border-gray-700">
+                            <div className="max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
+                              <p className="whitespace-pre-wrap leading-relaxed text-justify">
+                                {result.sumario_ia.sumario}
+                              </p>
+                              {result.sumario_ia.referencias &&
+                                result.sumario_ia.referencias.length > 0 && (
+                                  <div className="mt-4">
+                                    <h4 className="font-bold">Referênciais mais relevantes:</h4>
+                                    <ul className="mt-2 list-disc pl-5">
+                                      {result.sumario_ia.referencias.map((ref, index) => (
+                                        <li key={index} className="mb-1">
+                                          {ref}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
                             </div>
                           </div>
                         </DialogContent>
