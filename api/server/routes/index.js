@@ -28,6 +28,7 @@ const user = require('./user');
 const mcp = require('./mcp');
 const classificalSearch = require('./classificalSearch');
 const generateSummary = require('./generateSummary');
+const getSearchResult = require('./getSearchResult');
 
 module.exports = {
   edit,
@@ -59,5 +60,6 @@ module.exports = {
   staticRoute,
   mcp,
   classificalSearch,
-  generateSummary
+  generateSummary,
+  getSearchResult
 };
