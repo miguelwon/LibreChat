@@ -427,11 +427,11 @@ export default function Search() {
                             <DialogTitle>Sumário (Gerado por IA)</DialogTitle>
                           </DialogHeader>
                           <div className="border-t dark:border-gray-700">
-                            <div className="markdown-container max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300">
+                            <div className="markdown-container max-h-[70vh] overflow-y-auto p-4 text-sm text-gray-800 dark:text-gray-300 text-justify leading-relaxed">
                               <ArtifactProvider>
                                 <CodeBlockProvider>
-                                  <div className="prose dark:prose-invert max-w-none">
-                                    <Markdown content={result.sumario_ia.sumario} />
+                                  <div className="markdown prose dark:prose-invert w-full max-w-none">
+                                    <Markdown content={result.sumario_ia.sumario} isLatestMessage={false}/>
                                   </div>
                                 </CodeBlockProvider>
                               </ArtifactProvider>
