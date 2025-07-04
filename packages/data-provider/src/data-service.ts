@@ -86,8 +86,12 @@ export function getSearchResult(id: string): Promise<{ acordao_id: string; sumar
   return request.get(endpoints.getSearchResult(id));
 }
 
+export function getAcordao(id: string): Promise<any> {
+  return request.get(endpoints.getAcordao(id));
+}
+
 export function generateSummary(id: string): Promise<{ success: boolean }> {
-  return request.get(endpoints.summary(id));
+  return request.get(endpoints.generateSummary(id));
 }
 
 export function getSearchEnabled(): Promise<boolean> {
