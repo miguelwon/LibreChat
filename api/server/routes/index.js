@@ -29,6 +29,7 @@ const mcp = require('./mcp');
 const classificalSearch = require('./classificalSearch');
 const generateSummary = require('./generateSummary');
 const getSearchResult = require('./getSearchResult');
+const getAcordao = require('./getAcordao');
 
 module.exports = {
   edit,
@@ -61,5 +62,6 @@ module.exports = {
   mcp,
   classificalSearch,
   generateSummary,
-  getSearchResult
+  getSearchResult,
+  getAcordao
 };

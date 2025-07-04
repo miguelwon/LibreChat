@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input, Button, Checkbox, Slider,
   Dialog,
@@ -388,6 +389,11 @@ export default function Search() {
                     </a>
                   </h3>
                   <div className="flex flex-shrink-0 space-x-2">
+                    <Link to={`/acordao/${result.acordao_id}`} target="_blank">
+                      <Button variant="ghost" size="sm">
+                        Ler Acórdão
+                      </Button>
+                    </Link>
                     {result.sumario && (
                       <Dialog>
                         <DialogTrigger asChild>
