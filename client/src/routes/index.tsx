@@ -17,6 +17,7 @@ import dashboardRoutes from './Dashboard';
 import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
 import Search from './Search';
+import Acordao from './Acordao';
 import Root from './Root';
 
 const AuthLayout = () => (
@@ -104,6 +105,10 @@ export const router = createBrowserRouter([
           {
             path: 'search',
             element: <Search />,
+          },
+          {
+            path: 'acordao/:id',
+            element: <Acordao />,
           },
         ],
       },
