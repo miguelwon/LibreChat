@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataService } from 'librechat-data-provider';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
+import { Button } from '~/components/ui';
+import { Spinner } from '~/components/svg';
 
 interface SumarioIA {
   sumario: string;
@@ -34,11 +36,59 @@ export default function Acordao() {
     enabled: !!id,
   });
 
+  const queryClient = useQueryClient();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const pollForSummary = (acordaoId: string) => {
+    const intervalId = setInterval(async () => {
+      try {
+        const data = await dataService.getSearchResult(acordaoId);
+        if (data && data.sumario_ia) {
+          clearInterval(intervalId);
+          setIsGenerating(false);
+          queryClient.invalidateQueries({ queryKey: ['acordao', acordaoId] });
+        }
+      } catch (error) {
+        console.error('Polling for summary failed:', error);
+        clearInterval(intervalId);
+        setIsGenerating(false);
+      }
+    }, 5000);
+
+    setTimeout(() => {
+      clearInterval(intervalId);
+      if (isGenerating) {
+        setIsGenerating(false);
+      }
+    }, 120000);
+  };
+
+  const summaryMutation = useMutation({
+    mutationFn: () => dataService.generateSummary(id!),
+    onSuccess: (data) => {
+      if (data.success) {
+        pollForSummary(id!);
+      } else {
+        console.error('Failed to initiate summary generation.');
+        setIsGenerating(false);
+      }
+    },
+    onError: (error: Error) => {
+      console.error('Summary generation failed:', error);
+      setIsGenerating(false);
+    },
+  });
+
+  const handleGenerateSummary = () => {
+    setIsGenerating(true);
+    summaryMutation.mutate();
+  };
+
   useEffect(() => {
     if (acordao) {
       if (acordao.sumario) {
         setActiveTab('sumario');
-      } else if (acordao.sumario_ia) {
+      } else {
         setActiveTab('sumario_ia');
       }
     }
@@ -110,56 +160,65 @@ export default function Acordao() {
           </div>
 
           {/* Sumários */}
-          {(acordao.sumario || acordao.sumario_ia) && (
-            <div className="mb-8">
-              <div className="border-b border-gray-200 dark:border-gray-700">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                  {acordao.sumario && (
-                    <button
-                      onClick={() => setActiveTab('sumario')}
-                      className={`${
-                        activeTab === 'sumario'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      } whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium`}
-                    >
-                      Sumário
-                    </button>
-                  )}
-                  {acordao.sumario_ia && (
-                    <button
-                      onClick={() => setActiveTab('sumario_ia')}
-                      className={`${
-                        activeTab === 'sumario_ia'
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                      } whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium`}
-                    >
-                      Sumário IA
-                    </button>
-                  )}
-                </nav>
-              </div>
-              <div className="mt-4">
-                {activeTab === 'sumario' && acordao.sumario && (
-                  <div className="w-full rounded-lg bg-gray-50 p-6 text-base leading-relaxed dark:bg-gray-900/50">
-                    <p className="whitespace-pre-wrap text-justify">{acordao.sumario}</p>
-                  </div>
+          <div className="mb-8">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                {acordao.sumario && (
+                  <button
+                    onClick={() => setActiveTab('sumario')}
+                    className={`${
+                      activeTab === 'sumario'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                    } whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium`}
+                  >
+                    Sumário
+                  </button>
                 )}
-                {activeTab === 'sumario_ia' && acordao.sumario_ia && (
+                <button
+                  onClick={() => setActiveTab('sumario_ia')}
+                  className={`${
+                    activeTab === 'sumario_ia'
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                  } whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium`}
+                >
+                  Sumário IA
+                </button>
+              </nav>
+            </div>
+            <div className="mt-4">
+              {activeTab === 'sumario' && acordao.sumario && (
+                <div className="w-full rounded-lg bg-gray-50 p-6 text-base leading-relaxed dark:bg-gray-900/50">
+                  <p className="whitespace-pre-wrap text-justify">{acordao.sumario}</p>
+                </div>
+              )}
+              {activeTab === 'sumario_ia' &&
+                (acordao.sumario_ia ? (
                   <div className="w-full rounded-lg bg-gray-50 p-6 text-base leading-relaxed dark:bg-gray-900/50">
                     <ArtifactProvider>
                       <CodeBlockProvider>
-                        <div className="markdown prose w-full dark:prose-invert max-w-none">
+                        <div className="markdown prose w-full max-w-none dark:prose-invert">
                           <Markdown content={acordao.sumario_ia.sumario} isLatestMessage={false} />
                         </div>
                       </CodeBlockProvider>
                     </ArtifactProvider>
                   </div>
-                )}
-              </div>
+                ) : (
+                  <div className="flex items-center justify-start">
+                    <Button onClick={handleGenerateSummary} disabled={isGenerating}>
+                      {isGenerating ? (
+                        <>
+                          <Spinner className="mr-1" />A Gerar...
+                        </>
+                      ) : (
+                        'Gerar Sumário IA'
+                      )}
+                    </Button>
+                  </div>
+                ))}
             </div>
-          )}
+          </div>
 
           {/* Texto da Decisão */}
           <div>
