@@ -99,7 +99,9 @@ export const searchEnabled = () => '/api/search/enable';
 
 export const classificalSearch = () => '/api/classifical-search';
 
-export const getSearchResult = (id: string) => `/api/search/result/${id}`;
+export const getSearchResult = (id: string) => `/api/get-search-result/${id}`;
+
+export const getAcordao = (id: string) => `/api/get-acordao/${id}`;
 
 export const presets = () => '/api/presets';
 
@@ -292,4 +294,4 @@ export const memories = () => '/api/memories';
 export const memory = (key: string) => `${memories()}/${encodeURIComponent(key)}`;
 export const memoryPreferences = () => `${memories()}/preferences`;
 
-export const summary = (id: string) => `/api/summary/${id}`;
+export const generateSummary = (id: string) => `/api/generate-summary/${id}`;
