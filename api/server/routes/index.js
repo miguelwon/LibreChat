@@ -11,7 +11,6 @@ const balance = require('./balance');
 const plugins = require('./plugins');
 const actions = require('./actions');
 const banner = require('./banner');
-const search = require('./search');
 const models = require('./models');
 const convos = require('./convos');
 const config = require('./config');
@@ -30,6 +29,7 @@ const classificalSearch = require('./classificalSearch');
 const generateSummary = require('./generateSummary');
 const getSearchResult = require('./getSearchResult');
 const getAcordao = require('./getAcordao');
+const search = require('./search');
 
 module.exports = {
   edit,
@@ -44,7 +44,6 @@ module.exports = {
   banner,
   agents,
   convos,
-  search,
   config,
   models,
   prompts,
@@ -63,5 +62,6 @@ module.exports = {
   classificalSearch,
   generateSummary,
   getSearchResult,
-  getAcordao
+  getAcordao,
+  search
 };

@@ -1,30 +1,20 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TooltipAnchor } from '~/components/ui';
-import { useLocalize } from '~/hooks';
-import { ExperimentIcon } from '~/components/svg';
 
 export default function SearchButton() {
   const navigate = useNavigate();
-  const localize = useLocalize();
 
   const clickHandler = () => {
-    navigate('/search');
+    navigate('/classical-search');
   };
 
   return (
-    <TooltipAnchor
-      description={localize('com_ui_classifical_search')}
-      render={
-        <button
-          data-testid="nav-search-button"
-          aria-label={localize('com_ui_classifical_search')}
-          className="inline-flex size-10 flex-shrink-0 items-center justify-center rounded-xl border border-border-light bg-transparent text-text-primary transition-all ease-in-out hover:bg-surface-tertiary disabled:pointer-events-none disabled:opacity-50 radix-state-open:bg-surface-tertiary"
-          onClick={clickHandler}
-        >
-          <ExperimentIcon className="icon-md md:h-6 md:w-6" />
-        </button>
-      }
-    />
+    <button
+      data-testid="nav-search-button"
+      className="inline-flex h-10 flex-shrink-0 items-center justify-center rounded-lg border border-gray-300 bg-transparent px-3 text-sm font-medium text-text-primary transition-all ease-in-out hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-600 dark:hover:bg-gray-700"
+      onClick={clickHandler}
+    >
+      Pesquisar Acórdãos
+    </button>
   );
 } 

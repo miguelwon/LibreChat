@@ -16,7 +16,7 @@ import LoginLayout from './Layouts/Login';
 import dashboardRoutes from './Dashboard';
 import ShareRoute from './ShareRoute';
 import ChatRoute from './ChatRoute';
-import Search from './Search';
+import ClassicalSearch from './ClassicalSearch';
 import Acordao from './Acordao';
 import Root from './Root';
 
@@ -103,8 +103,8 @@ export const router = createBrowserRouter([
             element: <ChatRoute />,
           },
           {
-            path: 'search',
-            element: <Search />,
+            path: 'classical-search',
+            element: <ClassicalSearch />,
           },
           {
             path: 'acordao/:id',

@@ -1,28 +1,30 @@
 const express = require('express');
-const { MeiliSearch } = require('meilisearch');
-const requireJwtAuth = require('~/server/middleware/requireJwtAuth');
-const { isEnabled } = require('~/server/utils');
-
 const router = express.Router();
+const { MeiliSearch } = require('meilisearch');
+const { requireJwtAuth } = require('~/server/middleware');
 
-router.use(requireJwtAuth);
-
-router.get('/enable', async function (req, res) {
-  if (!isEnabled(process.env.SEARCH)) {
-    return res.send(false);
-  }
-
+router.get('/enable', requireJwtAuth, async (req, res) => {
   try {
+    const meiliHost = process.env.MEILI_HOST;
+    const meiliApiKey = process.env.MEILI_MASTER_KEY;
+    if (!meiliHost) {
+      return res.status(200).send(false);
+    }
+
     const client = new MeiliSearch({
-      host: process.env.MEILI_HOST,
-      apiKey: process.env.MEILI_MASTER_KEY,
+      host: meiliHost,
+      apiKey: meiliApiKey,
     });
 
-    const { status } = await client.health();
-    return res.send(status === 'available');
-  } catch (error) {
-    return res.send(false);
+    const health = await client.isHealthy();
+    if (!health) {
+      return res.status(200).send(false);
+    }
+
+    return res.status(200).send(true);
+  } catch (err) {
+    return res.status(200).send(false);
   }
 });
 
-module.exports = router;
+module.exports = router; 

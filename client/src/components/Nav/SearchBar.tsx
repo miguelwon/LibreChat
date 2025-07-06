@@ -28,11 +28,11 @@ const SearchBar = forwardRef((props: SearchBarProps, ref: React.Ref<HTMLDivEleme
   const [search, setSearchState] = useRecoilState(store.search);
 
   const clearSearch = useCallback(() => {
-    if (location.pathname.includes('/search')) {
-      newConversation({ disableFocus: true });
-      navigate('/c/new', { replace: true });
-    }
-  }, [newConversation, location.pathname, navigate]);
+    // if (location.pathname.includes('/search')) {
+    //   newConversation({ disableFocus: true });
+    //   navigate('/c/new', { replace: true });
+    // }
+  }, []);
 
   const clearText = useCallback(() => {
     setShowClearIcon(false);
@@ -83,11 +83,11 @@ const SearchBar = forwardRef((props: SearchBarProps, ref: React.Ref<HTMLDivEleme
       isTyping: true,
     }));
     debouncedSetDebouncedQuery(value);
-    if (value.length > 0 && location.pathname !== '/search') {
-      navigate('/search', { replace: true });
-    } else if (value.length === 0 && location.pathname === '/search') {
-      navigate('/c/new', { replace: true });
-    }
+    // if (value.length > 0 && location.pathname !== '/search') {
+    //   navigate('/search', { replace: true });
+    // } else if (value.length === 0 && location.pathname === '/search') {
+    //   navigate('/c/new', { replace: true });
+    // }
   };
 
   // Automatically set isTyping to false when loading is done and debouncedQuery matches query
