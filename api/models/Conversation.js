@@ -171,6 +171,8 @@ module.exports = {
       filters.push({ tags: { $in: tags } });
     }
 
+    filters.push({ $or: [{ expiredAt: null }, { expiredAt: { $exists: false } }] });
+
     if (search) {
       try {
         const meiliResults = await Conversation.meiliSearch(search);
