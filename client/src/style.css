@@ -2796,3 +2796,16 @@ html {
 .custom-style-2 {
   padding: 12px;
 }
+
+.nav.active:not(.nav-hidden) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.222);
+}
+
+.nav-hidden {
+  transform: translateX(-100%);
+}
+
+.nav-mask {
+  position: absolute;
+  top: 0;
+}

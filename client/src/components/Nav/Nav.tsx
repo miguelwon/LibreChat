@@ -188,10 +188,10 @@ const Nav = memo(
           className={cn(
             'nav active max-w-[320px] flex-shrink-0 transform overflow-x-hidden bg-surface-primary-alt transition-all duration-200 ease-in-out',
             'md:max-w-[260px]',
+            !navVisible && 'nav-hidden',
           )}
           style={{
-            width: navVisible ? navWidth : '0px',
-            transform: navVisible ? 'translateX(0)' : 'translateX(-100%)',
+            width: navVisible ? navWidth : '0',
           }}
         >
           <div className="h-full w-[320px] md:w-[260px]">
