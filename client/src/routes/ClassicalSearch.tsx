@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Input, Button, Checkbox, Slider,
   Dialog,
@@ -13,6 +13,8 @@ import { dataService } from 'librechat-data-provider';
 import { Spinner } from '~/components/svg';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
+import { OpenSidebar } from '~/components/Chat/Menus';
+import type { ContextType } from '~/common';
 
 interface SumarioIA {
   sumario: string;
@@ -94,6 +96,7 @@ export default function Search() {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const [generatingSummaries, setGeneratingSummaries] = useState<string[]>([]);
   const queryClient = useQueryClient();
+  const { navVisible, setNavVisible } = useOutletContext<ContextType>();
 
   useEffect(() => {
     fetch('/relatores.txt')
@@ -113,7 +116,17 @@ export default function Search() {
       selectedTribunais: string[];
       selectedRelatores: string[];
       dateRange: number[];
-    }) => dataService.classificalSearch(params),
+    }) => {
+      const apiPayload = {
+        query: params.query,
+        page: params.page,
+        tribunal: params.selectedTribunais,
+        relator: params.selectedRelatores,
+        date_min: params.dateRange[0],
+        date_max: params.dateRange[1],
+      };
+      return dataService.classificalSearch(apiPayload);
+    },
     {
       onSuccess: (data) => {
         setResults(data.results);
@@ -246,16 +259,47 @@ export default function Search() {
     setSelectedRelatores(selectedRelatores.filter((r) => r !== relator));
   };
 
+  const handleResetSearch = () => {
+    setSearchQuery('');
+    setSearchedQuery('');
+    setResults(null);
+    setCurrentPage(1);
+    setSelectedTribunais([]);
+    setRelatorInput('');
+    setSelectedRelatores([]);
+    setDateRange([2000, 2024]);
+  };
+
   return (
     <div
-      className={`flex min-h-screen w-full flex-col items-center justify-start transition-[padding-top] duration-300 ${
+      className={`relative flex min-h-screen w-full flex-col items-center justify-start transition-[padding-top] duration-300 ${
         !results && relatorSuggestions.length === 0 ? 'pt-48' : 'pt-10'
       }`}
     >
+      <div className="absolute top-2 left-2 flex gap-2">
+        {!navVisible && (
+          <OpenSidebar setNavVisible={setNavVisible} />
+        )}
+        {results && results.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetSearch}
+          >
+            Nova Pesquisa
+          </Button>
+        )}
+      </div>
       <div className="w-full max-w-5xl px-4">
-        <h1 className="mb-4 text-center text-2xl font-bold">
-          {localize('com_ui_classifical_search')}
-        </h1>
+        <Link
+          to="/classical-search"
+          className="text-2xl font-bold"
+          onClick={handleResetSearch}
+        >
+          <h1 className="mb-4 text-center hover:underline">
+            {localize('com_ui_classifical_search')}
+          </h1>
+        </Link>
         <div className={`w-full ${results ? 'mb-8' : ''}`}>
           <div className="flex items-center space-x-2">
           <Input
@@ -363,6 +407,18 @@ export default function Search() {
                   step={1}
                   className="mt-2"
                 />
+              </div>
+
+              <div className="mt-4 flex justify-end">
+                <Button
+                  onClick={() => handleSearch()}
+                  variant="submit"
+                  size="sm"
+                  disabled={searchMutation.isLoading}
+                  className="mt-4"
+                >
+                  {searchMutation.isLoading ? 'A procurar...' : 'Procurar'}
+                </Button>
               </div>
             </div>
           )}
