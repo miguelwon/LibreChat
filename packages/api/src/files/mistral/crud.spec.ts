@@ -45,6 +45,7 @@ jest.mock('~/utils/axios', () => ({
 import * as fs from 'fs';
 import axios from 'axios';
 import type { Request as ExpressRequest } from 'express';
+import type { TCustomConfig } from 'librechat-data-provider';
 import type { Readable } from 'stream';
 import type { MistralFileUploadResponse, MistralSignedUrlResponse, OCRResult } from '~/types';
 import { logger as mockLogger } from '@librechat/data-schemas';
@@ -77,6 +78,15 @@ interface MockReadStream extends Partial<Readable> {
 const mockAxios = jest.mocked(axios);
 
 const mockLoadAuthValues = jest.fn();
+
+type MockRequest = Pick<ExpressRequest, 'user' | 'app'> & {
+  user?: { id: string };
+  app: {
+    locals?: {
+      ocr?: TCustomConfig['ocr'];
+    };
+  };
+};
 
 describe('MistralOCR Service', () => {
   afterEach(() => {
@@ -456,7 +466,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -557,7 +567,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/image.png',
@@ -656,7 +666,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       // Set environment variable for model
       process.env.CUSTOM_MODEL = 'mistral-large';
@@ -749,7 +759,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -802,7 +812,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -889,7 +899,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -978,7 +988,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -1092,7 +1102,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/file.pdf',
@@ -1234,7 +1244,7 @@ describe('MistralOCR Service', () => {
               },
             },
           },
-        } as unknown as ExpressRequest;
+        } as MockRequest;
 
         const file = {
           path: '/tmp/upload/file.pdf',
@@ -1318,7 +1328,7 @@ describe('MistralOCR Service', () => {
               },
             },
           },
-        } as unknown as ExpressRequest;
+        } as MockRequest;
 
         const file = {
           path: '/tmp/upload/file.pdf',
@@ -1399,7 +1409,7 @@ describe('MistralOCR Service', () => {
             },
           },
         },
-      } as unknown as ExpressRequest;
+      } as MockRequest;
 
       const file = {
         path: '/tmp/upload/azure-file.pdf',
@@ -1475,7 +1485,7 @@ describe('MistralOCR Service', () => {
               },
             },
           },
-        } as unknown as ExpressRequest;
+        } as MockRequest;
 
         const file = {
           path: '/tmp/upload/file.pdf',
@@ -1539,7 +1549,7 @@ describe('MistralOCR Service', () => {
               },
             },
           },
-        } as unknown as ExpressRequest;
+        } as MockRequest;
 
         const file = {
           path: '/tmp/upload/file.pdf',
