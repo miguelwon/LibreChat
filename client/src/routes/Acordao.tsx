@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams, useOutletContext } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { dataService } from 'librechat-data-provider';
+import type { ContextType } from '~/common';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
+import { OpenSidebar } from '~/components/Chat/Menus';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
 import { Button } from '~/components/ui';
 import { Spinner } from '~/components/svg';
@@ -27,6 +29,7 @@ interface AcordaoType {
 export default function Acordao() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState<'sumario' | 'sumario_ia'>('sumario');
+  const { navVisible, setNavVisible } = useOutletContext<ContextType>();
 
   const {
     data: acordao,
@@ -107,7 +110,15 @@ export default function Acordao() {
   }
 
   return (
-    <div className="flex h-screen w-full bg-gray-100 dark:bg-gray-900">
+    <div className="relative flex h-screen w-full bg-gray-100 dark:bg-gray-900">
+      <div className="absolute top-2 left-2 flex gap-2">
+        {!navVisible && <OpenSidebar setNavVisible={setNavVisible} />}
+        <Link to="/classical-search">
+          <Button variant="outline" size="sm">
+            Nova Pesquisa
+          </Button>
+        </Link>
+      </div>
       <div className="w-full overflow-y-auto bg-white p-6 dark:bg-gray-800 sm:p-8">
         <div className="mx-auto max-w-7xl">
           <h1 className="mb-6 text-3xl font-bold text-gray-900 dark:text-gray-100">
