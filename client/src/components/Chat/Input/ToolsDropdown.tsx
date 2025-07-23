@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import * as Ariakit from '@ariakit/react';
-import { Globe, Settings, Settings2, TerminalSquareIcon } from 'lucide-react';
+import { Globe, Settings, Settings2, TerminalSquareIcon, Bot } from 'lucide-react';
 import type { MenuItemProps } from '~/common';
 import {
   AuthType,
@@ -8,13 +8,14 @@ import {
   ArtifactModes,
   PermissionTypes,
   defaultAgentCapabilities,
+  EModelEndpoint,
 } from 'librechat-data-provider';
 import { TooltipAnchor, DropdownPopup } from '~/components';
 import { useLocalize, useHasAccess, useAgentCapabilities } from '~/hooks';
 import ArtifactsSubMenu from '~/components/Chat/Input/ArtifactsSubMenu';
 import MCPSubMenu from '~/components/Chat/Input/MCPSubMenu';
 import { PinIcon, VectorIcon } from '~/components/svg';
-import { useBadgeRowContext } from '~/Providers';
+import { useBadgeRowContext, useAgentsMapContext, useChatContext } from '~/Providers';
 import { cn } from '~/utils';
 
 interface ToolsDropdownProps {
@@ -71,6 +72,21 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
     permissionType: PermissionTypes.RUN_CODE,
     permission: Permissions.USE,
   });
+
+  const canUseAgents = useHasAccess({
+    permissionType: PermissionTypes.AGENTS,
+    permission: Permissions.USE,
+  });
+
+  // Access agents map and chat context
+  const agentsMap = useAgentsMapContext();
+  const { conversation, newConversation } = useChatContext();
+  
+  // Get available agents
+  const availableAgents = useMemo(() => {
+    if (!agentsMap || !canUseAgents) return [];
+    return Object.values(agentsMap).filter(agent => agent && agent.id && agent.name);
+  }, [agentsMap, canUseAgents]);
 
   const showWebSearchSettings = useMemo(() => {
     const authTypes = webSearchAuthData?.authTypes ?? [];
@@ -134,6 +150,23 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
       mcpSelect.setMCPValues(newValues);
     },
     [mcpSelect],
+  );
+
+  const handleAgentSelect = useCallback(
+    (agentId: string) => {
+      const agent = agentsMap?.[agentId];
+      if (!agent) return;
+
+      // Switch to the selected agent by creating a new conversation
+      newConversation({
+        template: {
+          endpoint: EModelEndpoint.agents,
+          agent_id: agentId,
+          model: agent.model || '',
+        },
+      });
+    },
+    [agentsMap, newConversation],
   );
 
   const mcpPlaceholder = startupConfig?.interface?.mcpServers?.placeholder;
@@ -311,6 +344,70 @@ const ToolsDropdown = ({ disabled }: ToolsDropdownProps) => {
           handleMCPToggle={handleMCPToggle}
         />
       ),
+    });
+  }
+
+  // Add available agents to the dropdown
+  if (canUseAgents && availableAgents.length > 0) {
+    
+    // Add separator if there are other items
+    if (dropdownItems.length > 0) {
+      dropdownItems.push({
+        hideOnClick: false,
+        render: () => <hr className="my-1 border-border-light" />,
+      });
+    }
+
+    // Add agents section header
+    dropdownItems.push({
+      hideOnClick: false,
+      render: () => {
+        return (
+          <div className="px-3 py-1 text-xs font-medium text-text-secondary">
+            {localize('com_ui_agents')}
+          </div>
+        );
+      },
+    });
+
+    // Add each agent
+    availableAgents.forEach((agent) => {
+      if (!agent?.id || !agent?.name) return;
+
+      const isCurrentAgent = conversation?.agent_id === agent.id;
+      
+      dropdownItems.push({
+        onClick: () => handleAgentSelect(agent.id),
+        hideOnClick: true,
+        render: (props) => {
+          return (
+            <div {...props}>
+              <div className="flex items-center gap-2">
+                {agent.avatar?.filepath ? (
+                  <div className="flex h-5 w-5 items-center justify-center overflow-hidden rounded-full">
+                    <img 
+                      src={agent.avatar.filepath} 
+                      alt={agent.name || 'Agent'} 
+                      className="h-full w-full object-cover" 
+                    />
+                  </div>
+                ) : (
+                  <Bot className="icon-md" />
+                )}
+                <span className={cn(
+                  "truncate",
+                  isCurrentAgent && "font-medium text-text-primary"
+                )}>
+                  {agent.name}
+                </span>
+              </div>
+              {isCurrentAgent && (
+                <div className="h-2 w-2 rounded-full bg-green-500" title="Current Agent" />
+              )}
+            </div>
+          );
+        },
+      });
     });
   }
 
