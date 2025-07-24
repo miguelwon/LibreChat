@@ -340,6 +340,7 @@ export type TConfig = {
     defaultParamsEndpoint?: string;
     paramDefinitions?: SettingDefinition[];
   };
+  hidden?: boolean;
 };
 
 export type TEndpointsConfig =

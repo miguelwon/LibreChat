@@ -80,11 +80,15 @@ export const useEndpoints = ({
       if (includedEndpoints.size > 0 && !includedEndpoints.has(endpoints[i])) {
         continue;
       }
+      // Filter out hidden endpoints from main UI
+      if (endpointsConfig?.[endpoints[i]]?.hidden === true) {
+        continue;
+      }
       result.push(endpoints[i]);
     }
 
     return result;
-  }, [endpoints, hasAgentAccess, includedEndpoints]);
+  }, [endpoints, hasAgentAccess, includedEndpoints, endpointsConfig]);
 
   const endpointRequiresUserKey = useCallback(
     (ep: string) => {
