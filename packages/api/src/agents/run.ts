@@ -97,16 +97,19 @@ export async function createRun({
   streamUsage?: boolean;
   customHandlers?: Record<GraphEvents, EventHandler>;
 }): Promise<Run<IState>> {
+  let loggingFetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
   // LOG: Agent configuration being passed to createRun
-  console.log('=== createRun: Agent Configuration ===');
-  console.log('Agent provider:', agent.provider);
-  console.log('Agent endpoint:', agent.endpoint);
-  console.log('Agent model:', agent.model);
-  console.log('Agent model_parameters:', JSON.stringify(agent.model_parameters, null, 2));
-  console.log('Agent tools count:', agent.tools?.length || 0);
-  console.log('RunId:', runId);
-  console.log('Streaming:', streaming);
-  console.log('StreamUsage:', streamUsage);
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== createRun: Agent Configuration ===');
+    console.log('Agent provider:', agent.provider);
+    console.log('Agent endpoint:', agent.endpoint);
+    console.log('Agent model:', agent.model);
+    console.log('Agent model_parameters:', JSON.stringify(agent.model_parameters, null, 2));
+    console.log('Agent tools count:', agent.tools?.length || 0);
+    console.log('RunId:', runId);
+    console.log('Streaming:', streaming);
+    console.log('StreamUsage:', streamUsage);
+  }
 
   const provider =
     (providerEndpointMap[
@@ -114,10 +117,12 @@ export async function createRun({
     ] as unknown as Providers) ?? agent.provider;
 
   // LOG: Provider resolution
-  console.log('=== createRun: Provider Resolution ===');
-  console.log('Original provider:', agent.provider);
-  console.log('Resolved provider:', provider);
-  console.log('Is custom provider:', customProviders.has(agent.provider));
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== createRun: Provider Resolution ===');
+    console.log('Original provider:', agent.provider);
+    console.log('Resolved provider:', provider);
+    console.log('Is custom provider:', customProviders.has(agent.provider));
+  }
 
   const llmConfig: t.RunLLMConfig = Object.assign(
     {
@@ -129,8 +134,10 @@ export async function createRun({
   );
 
   // LOG: Initial LLM config
-  console.log('=== createRun: Initial LLM Config ===');
-  console.log('LLM Config:', JSON.stringify(llmConfig, null, 2));
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== createRun: Initial LLM Config ===');
+    console.log('LLM Config:', JSON.stringify(llmConfig, null, 2));
+  }
 
   /** Resolves issues with new OpenAI usage field */
   if (
@@ -139,8 +146,10 @@ export async function createRun({
   ) {
     llmConfig.streamUsage = false;
     llmConfig.usage = true;
-    console.log('=== createRun: Custom Provider Adjustments ===');
-    console.log('Set streamUsage to false and usage to true for custom provider');
+    if (process.env.DEBUG_LOGGING === 'true') {
+      console.log('=== createRun: Custom Provider Adjustments ===');
+      console.log('Set streamUsage to false and usage to true for custom provider');
+    }
   }
 
   let reasoningKey: 'reasoning_content' | 'reasoning' = 'reasoning_content';
@@ -159,8 +168,10 @@ export async function createRun({
   }
 
   // LOG: Reasoning key resolution
-  console.log('=== createRun: Reasoning Key ===');
-  console.log('Reasoning key:', reasoningKey);
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== createRun: Reasoning Key ===');
+    console.log('Reasoning key:', reasoningKey);
+  }
 
   const graphConfig: StandardGraphConfig = {
     signal,
@@ -175,42 +186,48 @@ export async function createRun({
   // TEMPORARY FOR TESTING
   if (agent.provider === Providers.ANTHROPIC || agent.provider === Providers.BEDROCK) {
     graphConfig.streamBuffer = 2000;
-    console.log('=== createRun: Anthropic/Bedrock Adjustment ===');
-    console.log('Set streamBuffer to 2000');
+    if (process.env.DEBUG_LOGGING === 'true') {
+      console.log('=== createRun: Anthropic/Bedrock Adjustment ===');
+      console.log('Set streamBuffer to 2000');
+    }
   }
 
   // LOG: Final configuration being passed to Run.create()
-  console.log('=== createRun: Final Configuration for @librechat/agents ===');
-  console.log('Graph Config:');
-  console.log('- llmConfig:', JSON.stringify(graphConfig.llmConfig, null, 2));
-  console.log('- reasoningKey:', graphConfig.reasoningKey);
-  console.log('- tools count:', graphConfig.tools?.length || 0);
-  console.log('- instructions length:', graphConfig.instructions?.length || 0);
-  console.log('- additional_instructions length:', graphConfig.additional_instructions?.length || 0);
-  console.log('- streamBuffer:', graphConfig.streamBuffer || 'not set');
-  console.log('- signal present:', !!graphConfig.signal);
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== createRun: Final Configuration for @librechat/agents ===');
+    console.log('Graph Config:');
+    console.log('- llmConfig:', JSON.stringify(graphConfig.llmConfig, null, 2));
+    console.log('- reasoningKey:', graphConfig.reasoningKey);
+    console.log('- tools count:', graphConfig.tools?.length || 0);
+    console.log('- instructions length:', graphConfig.instructions?.length || 0);
+    console.log('- additional_instructions length:', graphConfig.additional_instructions?.length || 0);
+    console.log('- streamBuffer:', graphConfig.streamBuffer || 'not set');
+    console.log('- signal present:', !!graphConfig.signal);
 
-  // LOG: HTTP-related configuration details
-  console.log('=== createRun: HTTP Configuration Details ===');
-  if (llmConfig.configuration?.baseURL) {
-    console.log('Base URL:', llmConfig.configuration.baseURL);
-  }
-  if (llmConfig.configuration?.defaultHeaders) {
-    console.log('Default Headers:', JSON.stringify(llmConfig.configuration.defaultHeaders, null, 2));
-  }
-  if (llmConfig.configuration?.timeout) {
-    console.log('Timeout:', llmConfig.configuration.timeout);
-  }
-  if ('apiKey' in llmConfig && llmConfig.apiKey) {
-    console.log('API Key present:', !!llmConfig.apiKey);
-    console.log('API Key length:', typeof llmConfig.apiKey === 'string' ? llmConfig.apiKey.length : 0);
+    // LOG: HTTP-related configuration details
+    console.log('=== createRun: HTTP Configuration Details ===');
+    if (llmConfig.configuration?.baseURL) {
+      console.log('Base URL:', llmConfig.configuration.baseURL);
+    }
+    if (llmConfig.configuration?.defaultHeaders) {
+      console.log('Default Headers:', JSON.stringify(llmConfig.configuration.defaultHeaders, null, 2));
+    }
+    if (llmConfig.configuration?.timeout) {
+      console.log('Timeout:', llmConfig.configuration.timeout);
+    }
+    if ('apiKey' in llmConfig && llmConfig.apiKey) {
+      console.log('API Key present:', !!llmConfig.apiKey);
+      console.log('API Key length:', typeof llmConfig.apiKey === 'string' ? llmConfig.apiKey.length : 0);
+    }
+    console.log('=== createRun: Creating Run instance ===');
   }
 
-  console.log('=== createRun: Creating Run instance ===');
-
-  // Monkey-patch fetch to log HTTP requests for the entire request lifecycle
-  const loggingFetch = createLoggingFetch(runId);
-  (global as any).fetch = loggingFetch;
+  if (process.env.DEBUG_LOGGING === 'true') {
+    console.log('=== HTTP Logging: Enabled ===');
+    // Monkey-patch fetch to log HTTP requests for the entire request lifecycle
+    loggingFetch = createLoggingFetch(runId);
+    (global as any).fetch = loggingFetch;
+  }
 
   const run = await Run.create({
     runId,
@@ -222,18 +239,22 @@ export async function createRun({
   const originalProcessStream = run.processStream.bind(run);
   run.processStream = async (inputs: any, config: any, options?: any) => {
     try {
-      console.log('=== HTTP Logging: Starting processStream ===');
-      // Ensure our logging fetch is still active
-      (global as any).fetch = loggingFetch;
-      
+      if (process.env.DEBUG_LOGGING === 'true') {
+        console.log('=== HTTP Logging: Starting processStream ===');
+        // Ensure our logging fetch is still active
+        (global as any).fetch = loggingFetch;
+      }
       const result = await originalProcessStream(inputs, config, options);
-      
-      console.log('=== HTTP Logging: Completed processStream ===');
+      if (process.env.DEBUG_LOGGING === 'true') {
+        console.log('=== HTTP Logging: Completed processStream ===');
+      }
       return result;
     } finally {
-      // Restore original fetch after processStream completes
-      console.log('=== HTTP Logging: Restoring original fetch ===');
-      (global as any).fetch = originalFetch;
+      if (process.env.DEBUG_LOGGING === 'true') {
+        // Restore original fetch after processStream completes
+        console.log('=== HTTP Logging: Restoring original fetch ===');
+        (global as any).fetch = originalFetch;
+      }
     }
   };
 
