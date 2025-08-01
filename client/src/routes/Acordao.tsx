@@ -6,8 +6,7 @@ import type { ContextType } from '~/common';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
 import { OpenSidebar } from '~/components/Chat/Menus';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
-import { Button } from '~/components/ui';
-import { Spinner } from '~/components/svg';
+import { Button, Spinner } from '@librechat/client';
 
 interface SumarioIA {
   sumario: string;

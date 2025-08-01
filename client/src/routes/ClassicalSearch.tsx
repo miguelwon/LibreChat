@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Input, Button, Checkbox, Slider,
+import { 
+  Input, 
+  Button, 
+  Checkbox,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '~/components/ui';
+  Slider
+} from '@librechat/client';
 import { useLocalize } from '~/hooks';
 import { dataService } from 'librechat-data-provider';
-import { Spinner } from '~/components/svg';
+import { Spinner } from '@librechat/client';
 import Markdown from '~/components/Chat/Messages/Content/Markdown';
 import { ArtifactProvider, CodeBlockProvider } from '~/Providers';
 import { OpenSidebar } from '~/components/Chat/Menus';
@@ -343,7 +347,7 @@ export default function Search() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={localize('com_ui_search_placeholder')}
+            placeholder={localize('com_nav_search_placeholder')}
             className="flex-grow"
           />
             <Button
