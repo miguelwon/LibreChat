@@ -42,6 +42,28 @@ export default function Acordao() {
   const queryClient = useQueryClient();
   const [isGenerating, setIsGenerating] = useState(false);
 
+
+  // Function to sanitize markdown content to prevent unwanted code blocks
+  const sanitizeMarkdownContent = (text: string) => {
+    return text
+      // Remove code block fences if they don't contain actual code
+      .replace(/```[\s\S]*?```/g, (match) => {
+        const content = match.replace(/```/g, '').trim();
+        // If it looks like legal text (contains common legal words), treat as regular text
+        const legalKeywords = /\b(artigo|lei|código|processo|tribunal|decisão|acórdão|relator|sumário)\b/i;
+        if (legalKeywords.test(content)) {
+          return content;
+        }
+        return match; // Keep actual code blocks
+      })
+      // Convert 4+ space indentation to 2 spaces (prevents code block interpretation)
+      .replace(/^( {4,})/gm, '  ')
+      // Convert tab indentation to 2 spaces
+      .replace(/^\t+/gm, '  ')
+      // Remove inline code backticks around legal references
+      .replace(/`([^`]*(?:artigo|lei|código|processo|n\.?º?|art\.?|§)[^`]*)`/gi, '$1');
+  };
+
   const pollForSummary = (acordaoId: string) => {
     const intervalId = setInterval(async () => {
       try {
@@ -237,7 +259,13 @@ export default function Acordao() {
               Texto da Decisão:
             </h2>
             <div className="w-full rounded-lg bg-gray-50 p-6 text-base leading-relaxed dark:bg-gray-900/50">
-              <p className="whitespace-pre-wrap text-justify">{acordao.texto_decisao}</p>
+              <ArtifactProvider>
+                <CodeBlockProvider>
+                  <div className="markdown prose w-full max-w-none dark:prose-invert">
+                  <Markdown content={sanitizeMarkdownContent(acordao.texto_decisao)} isLatestMessage={false} />
+                  </div>
+                </CodeBlockProvider>
+              </ArtifactProvider>
             </div>
           </div>
         </div>
