@@ -46,6 +46,16 @@ interface SummaryState {
   isOpen: boolean;
 }
 
+// Portuguese stopwords to exclude from highlighting
+const PORTUGUESE_STOPWORDS = new Set([
+  'de', 'a', 'o', 'que', 'e', 'do', 'da', 'em', 'um', 'para', 'é', 'com', 'não', 'uma', 
+  'os', 'no', 'se', 'na', 'por', 'mais', 'as', 'dos', 'como', 'mas', 'foi', 'ao', 'ele', 
+  'das', 'tem', 'à', 'seu', 'sua', 'ou', 'ser', 'quando', 'muito', 'há', 'nos', 'já', 
+  'está', 'eu', 'também', 'só', 'pelo', 'pela', 'até', 'isso', 'ela', 'entre', 'era', 
+  'depois', 'sem', 'mesmo', 'aos', 'ter', 'seus', 'quem', 'nas', 'me', 'esse', 'eles', 
+  'estão', 'você', 'tinha', 'foram', 'essa', 'num', 'nem', 'suas', 'meu', 'às', 'minha'
+]);
+
 const usePollForResult = (
   onSuccess: (data: { acordao_id: string; sumario_ia: SumarioIA | null }) => void,
 ) => {
@@ -80,6 +90,32 @@ const usePollForResult = (
   return { startPolling };
 };
 
+// Function to highlight matching words in text
+const highlightMatchingWords = (text: string, query: string): string => {
+  if (!query || !text) return text;
+
+  // Split query into words and filter out stopwords
+  const queryWords = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(word => word.length > 1 && !PORTUGUESE_STOPWORDS.has(word.toLowerCase()));
+
+  if (queryWords.length === 0) return text;
+
+  // Escape special regex characters
+  const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  
+  // Create regex pattern for all query words
+  const pattern = queryWords
+    .map(word => `\\b${escapeRegex(word)}\\b`)
+    .join('|');
+  
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  
+  // Replace matches with highlighted version
+  return text.replace(regex, '<strong>$1</strong>');
+};
+
 export default function Search() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchedQuery, setSearchedQuery] = useState('');
@@ -107,7 +143,7 @@ export default function Search() {
       });
   }, []);
 
-  const TRIBUNAIS = ['JP', 'STA', 'STJ', 'TCAN', 'TCAS', 'TRC', 'TRE', 'TRG', 'TRL', 'TRP'];
+  const TRIBUNAIS = ['JP', 'STA', 'STJ', 'TC', 'TCAN', 'TCAS', 'TRC', 'TRE', 'TRG', 'TRL', 'TRP'];
 
   const searchMutation = useMutation(
     (params: {
@@ -434,22 +470,25 @@ export default function Search() {
               >
                 <div className="flex items-start justify-between">
                   <h3 className="pr-4 text-xl font-semibold">
-                    <a
-                      href={result.url.startsWith('http') ? result.url : `http://${result.url}`}
+                    <Link
+                      to={`/acordao/${result.acordao_id}`}
                       target="_blank"
-                      rel="noopener noreferrer"
                       className="text-blue-700 hover:underline dark:text-blue-400"
                     >
                       Acórdão do {result.tribunal} de{' '}
                       {new Date(result.data_acordao).toLocaleDateString()}
-                    </a>
+                    </Link>
                   </h3>
                   <div className="flex flex-shrink-0 space-x-2">
-                    <Link to={`/acordao/${result.acordao_id}`} target="_blank">
+                    <a
+                      href={result.url.startsWith('http') ? result.url : `http://${result.url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       <Button variant="ghost" size="sm">
-                        Ler Acórdão
+                        Original
                       </Button>
-                    </Link>
+                    </a>
                     {result.sumario && (
                       <Dialog>
                         <DialogTrigger asChild>
@@ -532,7 +571,10 @@ export default function Search() {
                   Processo: <span className="font-bold">{result.n_processo}</span> | Relator:{' '}
                   <span className="font-bold">{result.relator.join(', ')}</span>
                 </p>
-                <p className="mt-4 text-sm text-gray-800 dark:text-gray-300">{result.chunk}</p>
+                <p 
+                  className="mt-4 text-sm text-gray-800 dark:text-gray-300"
+                  dangerouslySetInnerHTML={{ __html: highlightMatchingWords(result.chunk, searchedQuery) }}
+                />
               </div>
             ))}
           </div>
