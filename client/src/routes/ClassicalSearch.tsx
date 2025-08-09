@@ -29,7 +29,7 @@ interface SumarioIA {
 }
 
 interface SearchResult {
-  mg_id: string;
+  chunk_id: string;
   acordao_id: string;
   chunk: string;
   chunk_idx: number;
@@ -41,6 +41,7 @@ interface SearchResult {
   relator: string[];
   sumario: string | null;
   sumario_ia: SumarioIA | null;
+  dgsi_url: string;
 }
 
 interface SummaryState {
@@ -130,7 +131,7 @@ export default function Search() {
   const [selectedTribunais, setSelectedTribunais] = useState<string[]>([]);
   const [relatorInput, setRelatorInput] = useState('');
   const [selectedRelatores, setSelectedRelatores] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState([2000, 2024]);
+  const [dateRange, setDateRange] = useState([1990, 2025]);
   const [allRelatores, setAllRelatores] = useState<string[]>([]);
   const [relatorSuggestions, setRelatorSuggestions] = useState<string[]>([]);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -307,7 +308,7 @@ export default function Search() {
     setSelectedTribunais([]);
     setRelatorInput('');
     setSelectedRelatores([]);
-    setDateRange([2000, 2024]);
+    setDateRange([1990, 2025]);
   };
 
   return (
@@ -442,8 +443,8 @@ export default function Search() {
                 <Slider
                   value={dateRange}
                   onValueChange={setDateRange}
-                  min={2000}
-                  max={2024}
+                  min={1990}
+                  max={2025}
                   step={1}
                   className="mt-2"
                 />
@@ -469,7 +470,7 @@ export default function Search() {
           <div className="flex flex-col">
             {results.map((result) => (
               <div
-                key={result.mg_id}
+                key={result.chunk_id}
                 className="mb-6 rounded-lg border bg-white p-6 shadow-md dark:border-gray-700 dark:bg-gray-800"
               >
                 <div className="flex items-start justify-between">
@@ -485,7 +486,7 @@ export default function Search() {
                   </h3>
                   <div className="flex flex-shrink-0 space-x-2">
                     <a
-                      href={result.url.startsWith('http') ? result.url : `http://${result.url}`}
+                      href={result.dgsi_url.startsWith('http') ? result.url : `http://${result.dgsi_url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >

@@ -23,6 +23,7 @@ interface AcordaoType {
   sumario?: string;
   sumario_ia?: SumarioIA;
   texto_decisao: string;
+  url?: string;
 }
 
 export default function Acordao() {
@@ -176,9 +177,18 @@ export default function Acordao() {
 
           {/* Descritores */}
           <div className="mb-8">
-            <h2 className="mb-3 text-xl font-semibold text-gray-800 dark:text-gray-200">
-              Descritores:
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                Descritores:
+              </h2>
+              {acordao.url && (
+                <a href={acordao.url.startsWith('http') ? acordao.url : `http://${acordao.url}`} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm">
+                    Original
+                  </Button>
+                </a>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {acordao.descritores.map((desc, index) => (
                 <span
