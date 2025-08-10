@@ -156,6 +156,7 @@ export default function ToolCall({
       <div className="relative my-2.5 flex h-5 shrink-0 items-center gap-2.5">
         <ProgressText
           progress={progress}
+          onClick={() => setShowInfo((prev) => !prev)}
           inProgressText={
             function_name
               ? localize('com_assistants_running_var', { 0: function_name })
@@ -170,7 +171,7 @@ export default function ToolCall({
           error={cancelled}
         />
       </div>
-      {/* <div
+      <div
         className="relative"
         style={{
           height: showInfo ? contentHeight : 0,
@@ -210,7 +211,7 @@ export default function ToolCall({
             )}
           </div>
         </div>
-      </div> */}
+      </div>
       {auth != null && auth && progress < 1 && !cancelled && (
         <div className="flex w-full flex-col gap-2.5">
           <div className="mb-1 mt-2">

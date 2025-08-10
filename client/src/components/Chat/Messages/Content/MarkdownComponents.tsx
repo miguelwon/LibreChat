@@ -98,7 +98,7 @@ export const a: React.ElementType = memo(({ href, children }: TAnchorProps) => {
   }, [user?.id, href]);
 
   const { refetch: downloadFile } = useFileDownload(user?.id ?? '', file_id);
-  const props: { target?: string; onClick?: React.MouseEventHandler } = { target: '_blank' };
+  const props: { target?: string; onClick?: React.MouseEventHandler } = { target: '_new' };
 
   if (!file_id || !filename) {
     return (

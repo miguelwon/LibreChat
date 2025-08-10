@@ -10,7 +10,6 @@ import ExportAndShareMenu from './ExportAndShareMenu';
 import BookmarkMenu from './Menus/BookmarkMenu';
 import { TemporaryChat } from './TemporaryChat';
 import AddMultiConvo from './AddMultiConvo';
-import SearchButton from './Menus/SearchButton';
 import { useHasAccess } from '~/hooks';
 
 const defaultInterface = getConfigDefaults().interface;
@@ -57,8 +56,9 @@ export default function Header() {
             } ${!navVisible ? 'translate-x-0' : 'translate-x-[-100px]'}`}
           >
             <ModelSelector startupConfig={startupConfig} />
+            {interfaceConfig.presets === true && interfaceConfig.modelSelect && <PresetsMenu />}
             {hasAccessToBookmarks === true && <BookmarkMenu />}
-            <SearchButton />
+            {hasAccessToMultiConvo === true && <AddMultiConvo />}
             {isSmallScreen && (
               <>
                 <ExportAndShareMenu
